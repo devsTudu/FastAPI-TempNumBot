@@ -16,7 +16,7 @@ class serviceInfo(BaseModel):
     tigerCode: str  = None
     bowerCode: str  = None
     fiveCode: str  = None
-    country: Optional[countryInfo]
+    country: countryInfo
 
 class serviceDetails(BaseModel):
     server: SERVERS

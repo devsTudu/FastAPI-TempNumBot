@@ -13,15 +13,15 @@ class fastSMS:
     self.main_params = {"api_key": TOKENS["fast"], "country": countryID}
 
   
-  async def getPhonenumber(self,service:serviceDetails,user:str)->Union[phoneDetails,dict]:
+  async def getPhoneNumber(self,serviceDet:serviceDetails,user:str)->Union[phoneDetails,dict]:
     params = self.main_params
-    params['service'] = service.serviceInfo.fastCode
+    params['service'] = serviceDet.serviceInfo.fastCode
     params['action'] = "getNumber"
-    params['country'] = service.serviceInfo.country.code
+    params['country'] = serviceDet.serviceInfo.country.code
     response = await tools.getText(self.url,params=params)
     if not tools.isError(response) and ":" in response:
        _,access,phone = response.split(":")
-       return phoneDetails(serviceDetail=service,phone=phone,access_id=access,user=user,status='Waiting',)
+       return phoneDetails(serviceDetail=serviceDet,phone=phone,access_id=access,user=user,status='Waiting',)
     else:
        return response
   
@@ -165,7 +165,7 @@ class tigerSMS:
     except ValueError as v:
       return v
       
-  async def getServiceDetails(self,service:serviceInfo)->Union[serviceDetails,dict]:
+  async def getServiceDetails(self,service:serviceInfo)->Union[serviceDetails,Error]:
       base_url = "https://api.tiger-sms.com/stubs/handler_api.php"
       serviceid = service.tigerCode
       countrycode = service.country.code
@@ -179,20 +179,20 @@ class tigerSMS:
         return serviceDetails(server='Tiger',serviceInfo=service,**data)
         #return response[countrycode][serviceid]
       except KeyError:
-        return {"Error":response}
+        return Error(message=f"{service.name} not found in TigerSMS")
       except TypeError as t:
-        return {'Error':str(t)}
+        return Error(message=f"Service {serviceid} has {str(t)}")
 
-  async def getPhoneNumber(self, service:serviceDetails,user:str)->Union[phoneDetails,Error]:
+  async def getPhoneNumber(self, serviceDet:serviceDetails,user:str)->Union[phoneDetails,Error]:
     params = self.params
-    params['service'] = service.serviceInfo.tigerCode
+    params['service'] = serviceDet.serviceInfo.tigerCode
     params['action'] = "getNumber"
-    params['country'] = service.serviceInfo.country.code
+    params['country'] = serviceDet.serviceInfo.country.code
     params['ref'] = 'Nothing'
     response = await tools.getText(self.url, params)
     if not tools.isError(response) and ":" in response:
         _, access, phone = response.split(":")
-        return phoneDetails(serviceDetail=service,
+        return phoneDetails(serviceDetail=serviceDet,
                             access_id=access,
                             phone=phone,user=user)
     else:
@@ -297,6 +297,7 @@ class tigerSMS:
     print("Tiger Test")
     service_info = serviceInfo(name=name,tigerCode=code,country=countryInfo())
     service = await self.getServiceDetails(service_info)
+    show(service)
     resp = await self.getPhoneNumber(service,'987654321')
     if isinstance(resp,Error):
       return resp
@@ -374,7 +375,9 @@ class bowerSMS:
     params['id'] = phoneDet.access_id
     params['action'] = "getStatus"
     response = await tools.getText(self.url, params=params)
+
     if not tools.isError(response):
+        show(response)
         if "WAIT" in response:
           phoneDet.status = 'Waiting'
         elif "CANCEL" in response:
@@ -416,6 +419,7 @@ class bowerSMS:
 
     response = await tools.getText(self.url, params=params)
     if not tools.isError(response):
+       show(response)
        if "ACCESS_READY" in response:
           phoneDet.status = 'Waiting'
        elif "ACCESS_RETRY_GET" in response:
@@ -445,38 +449,332 @@ class bowerSMS:
     response = await tools.getJson(self.url, params=params)
     return response
 
-  async def test(self, code,name):
-    print("Bower Test")
-    try:
-      req = serviceInfo(bowerCode=code,name=name,country=countryInfo())
-      service = await self.getServiceDetails(req)
-      show(service)
-      x = 1 #input("Buy (y/n):")
-      if x == 1:
-        phone = await self.getPhoneNumber(serviceDet=service,user='9348692623')
-        print(1)
-        show(phone)
-        if isinstance(phone,phoneDetails):  
-          if phone.status == 'Waiting':
-            show("Waiting 10 sec before canceling")
-            time.sleep(10)
-            cancel = await self.cancelService(phoneDet=phone)
-            show(cancel)
-        else:
-          show(await self.getStatus(service,'12345678'))
-    except Exception as e:
-      print(e)
-        
 
+class FiveSim:
+  def __init__(self):
+      self.token = TOKENS["5Sim"]
+      self.headers = {
+          'Authorization': 'Bearer '+ self.token,
+          'Accept': 'application/json',
+      }
+
+      self.country = 'india'
+
+  
+  async def getBalance(self):
+    url = 'https://5sim.net/v1/user/profile'
+    response = await tools.getJson(url,
+       headers=self.headers)
+    try:
+      bal = float(response['balance'])
+      return bal
+    except ValueError as v:
+      return v
+
+  async def getServiceDetails(self,service:serviceInfo)->Union[list[phoneDetails],Error]:
+      serviceCode = service.fiveCode
+      countryCode = service.country.name
+      if not serviceCode:
+        return Error(message=f"Service {serviceCode}not found in 5Sim")
+      params = {
+        'product':serviceCode,
+        'country':countryCode
+      }
+
+      response = await tools.getJson('https://5sim.net/v1/guest/prices',
+                              headers=self.headers,
+                              params=params)
+      try:
+          respond = response[countryCode][serviceCode]
+          lis = []
+          for key,val in respond.items():
+            data = {
+              'server':'5Sim',
+              'serviceInfo':service,
+              'provider':key,
+              'count':val['count'],
+              'cost':val['cost']
+            }
+            lis.append(serviceDetails(**data))
+          return lis
+      except :
+          return Error(message=str(response)) 
+  
+  async def getPhoneNumber(self,serviceDet:serviceDetails,user:str="1234567")->Union[phoneDetails,Error]:
+      """Returns ("Error", error Message), when Couldnot fetch phone,
+      and (id, phone number) when sucessfully fetched"""
+      country = serviceDet.serviceInfo.country.name
+      product = serviceDet.serviceInfo.fiveCode
+      operator = serviceDet.provider
+      url = f"https://5sim.net/v1/user/buy/activation/{country}/{operator}/{product}"
+      response = await tools.getJson(url,
+                               headers=self.headers)
+      try:
+        phone = response['phone']
+        id = str(response['id'])
+        serviceDet.cost = response['price']
+        return phoneDetails(access_id=id,phone=phone,serviceDetail=serviceDet,user=user)
+      except KeyError:
+        return Error(message=response['Error'])
+        example = {
+          "id":11631253,
+          "phone":"+79000381454",
+          "operator":"beeline",
+          "product":"vkontakte",
+          "price":21,
+          "status":"PENDING",
+          "expires":"2018-10-13T08:28:38.809469028Z",
+          "sms":null,
+          "created_at":"2018-10-13T08:13:38.809469028Z",
+          "forwarding":false,
+          "forwarding_number":"",
+          "country":"russia"
+          }
+                
+
+  async def getStatus(self,phoneDet:phoneDetails)->phoneDetails:
+      """"
+      PENDING - Preparation
+      RECEIVED - Waiting of receipt of SMS
+      CANCELED - Is cancelled
+      TIMEOUT - A timeout
+      FINISHED - Is complete
+      BANNED - Number banned, when number already used
+      """
+      
+      url = 'https://5sim.net/v1/user/check/' + phoneDet.access_id
+      response = await tools.getJson(url,
+                              headers=self.headers)
+      if tools.isError(response):
+        phoneDet.status='Invalid'
+      else:
+        try:
+          #Returning the last OTP Received
+          if "PENDING" in response['status']:
+            phoneDet.status='Waiting'
+          elif response['status'] in ['CANCELED', 'TIMEOUT','BANNED']:
+            phoneDet.status='Expired'
+          elif response['status'] in ['RECEIVED','FINISHED']:
+            if  response['sms']:
+              phoneDet.status='Success'
+              phoneDet.otp=response['sms'][-1]['code']
+            else:
+              phoneDet.status='Waiting'
+        except ValueError as v:
+          phoneDet.status='Invalid'
+      return phoneDet
+        
+      example = {
+        "id": 11631253,
+        "created_at": "2018-10-13T08:13:38.809469028Z",
+        "phone": "+79000381454",
+        "product": "vkontakte",
+        "price": 21,
+        "status": "RECEIVED",
+        "expires": "2018-10-13T08:28:38.809469028Z",
+        "sms": [
+            {
+              "created_at":"2018-10-13T08:20:38.809469028Z",
+              "date":"2018-10-13T08:19:38Z",
+              "sender":"VKcom",
+              "text":"VK: 09363 - use this code to reclaim your suspended profile.",
+              "code":"09363"
+            }
+        ],
+        "forwarding": false,
+        "forwarding_number": "",
+        "country":"russia"
+        }
+
+
+  async def changeStatus(self,phoneDet:phoneDetails,code:str)->bool:
+    """Change the status of id, status = [finish,cancel]"""
+    if code not in ['finish','cancel']:
+      return "status are in value finish/cancel"
+
+    url = f'https://5sim.net/v1/user/{code}/' + str(id)
+    response =await tools.getJson(url,
+                               headers=self.headers)
+    try:
+      return response['status']=="CANCELED/FINISHED"
+    except:
+      return False
+
+    example = {
+        "id": 11631253,
+        "created_at": "2018-10-13T08:13:38.809469028Z",
+        "phone": "+79000381454",
+        "product": "vkontakte",
+        "price": 21,
+        "status": "CANCELED/FINISHED",
+        "expires": "2018-10-13T08:28:38.809469028Z",
+        "sms": [
+          {
+            "created_at":"2018-10-13T08:20:38.809469028Z",
+            "date":"2018-10-13T08:19:38Z",
+            "sender":"VKcom",
+            "text":"VK: 09363 - use this code to reclaim your suspended profile.",
+            "code":"09363"
+          }
+        ],
+        "forwarding": false,
+        "forwarding_number": "",
+        "country":"russia"
+        }
+
+  async def cancelService(self,phoneDet:phoneDetails)->bool:
+    """Cancel the service"""
+    return await self.changeStatus(phoneDet,'cancel')
+
+  async def getPrice2(self,service:str,provider:str='any'):
+      """
+      To get the Price of a specific provider, put the value, other wise when provider is 'any'-> it returns a list of dict of different available providers
+      """
+      headers = {
+        'Accept': 'application/json',
+      }
+      params = (
+          ('country', self.country),
+          ('product', service),
+      )
+
+      response = await tools.getJson('https://5sim.net/v1/guest/prices',
+                              headers=headers, params=params)
+      try:
+        if provider=='any':
+          #This is when you want a list of prices for a product
+          reply = response[self.country][service]
+        else:
+          #This is to get a single price for a good, to deduct after purchase
+          reply = response[self.country][service][provider]['cost']
+        return reply
+      except ValueError as v:
+        return str(v)
+      except KeyError as k:
+        return str(k)+str(response)
+      
+      examples = {
+          "russia":{
+            "telegram":{
+              "beeline":{
+                "cost":8,
+                "count":0,
+                "rate": 99.99
+              },
+              "matrix":{
+                "cost":8,
+                "count":0,
+                "rate": 99.99
+              },
+              "megafon":{
+                "cost":8,
+                "count":0,
+                "rate": 99.99
+              },
+              "mts":{
+                "cost":8,
+                "count":0,
+                "rate": 99.99
+              },
+              "rostelecom":{
+                "cost":8,
+                "count":0,
+                "rate": 99.99
+              },
+              "tele2":{
+                "cost":8,
+                "count":0,
+                "rate": 99.99
+              },
+              "virtual15":{
+                "cost":8,
+                "count":0,
+                "rate": 99.99
+              },
+              "yota":{
+                "cost":8,
+                "count":0,
+                "rate": 99.99
+              }
+            }
+          }
+          }
+
+  
+  async def rebuyNumber(self,service,number):
+      product = service
+      url = f"https://5sim.net/v1/user/reuse/{product}/{number}"
+      response = await tools.getJson(url,
+                              headers=self.headers)
+      return response
+
+
+
+
+
+class testFunctions:
+  def __init__(self,service:serviceInfo):
+    self.bower = bowerSMS()
+    self.tiger = tigerSMS()
+    self.fast = fastSMS()
+    self.fivesim = FiveSim()
+    self.service = service
+
+  async def testServer(self,serverName:str):
+    if serverName == 'bower':
+      print("Bower Test Starting")
+      server = self.bower
+    elif serverName == 'tiger':
+      print("Tiger Test Starting")
+      server = self.tiger
+    elif serverName == 'fast':
+      print("Fast Test Starting")
+      server = self.fast
+    elif serverName == '5sim':
+      print("5sim Test Starting")
+      server = self.fivesim
+    else:
+      print("Invalid Server Name")
+      return None
+    bal = await server.getBalance()
+    print("Balance: " + str(bal))
+    serviceDet =await server.getServiceDetails(service=self.service)
+    show(serviceDet)
+    if isinstance(serviceDet,list):
+      provider_list = []
+      for i in serviceDet:
+        provider_list.append(i.provider)
+        print("%s cost: %i count:%i" % (i.provider,i.cost,i.count))
+      while True:
+        provider = input("Enter Provider:")
+        if provider in provider_list:
+          for i in serviceDet:
+            if i.provider == provider:
+              serviceDet = i
+              break
+          break
+        else: print(f"Invalid {provider}")
+
+    if not isinstance(serviceDet, serviceDetails):
+      return None
+    phone = await server.getPhoneNumber(serviceDet=serviceDet,user='9348692623')
+    show(phone)
+    if isinstance(phone,phoneDetails):
+      if phone.status == 'Waiting':
+        show("Waiting 10 sec before canceling")
+        time.sleep(10)
+        cancel = await server.cancelService(phoneDet=phone)
+        print("Cancelling now the phone number, sucess:",end=" ")
+        show(cancel)
 
 if __name__ == '__main__':
-    tiger = tiger()
-    a = asyncio.run(tiger.test('ig','Instagram'))
-    print(a)
-    
-    bower = bowerSMS()
-    a = asyncio.run(bower.test('ig','Instagram'))
-    print(a)
+    name = "instagram"
+    service = tools.getServiceInfo(name,country=countryInfo())
+    show(service)
+    test = testFunctions(service=service)
+    asyncio.run(test.testServer('5sim'))
+
+
 
 # Tests Functions Declared
 def test_countryFromID():

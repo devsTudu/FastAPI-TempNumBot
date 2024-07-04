@@ -1,11 +1,12 @@
 from json import JSONDecodeError
+import json
 from os import getenv
 from pprint import pprint
 from typing import Union
 
 from pydantic import BaseModel
 from requests import get
-
+from models import (serviceInfo,countryInfo)
 
 
 # Variable Declaration
@@ -27,6 +28,9 @@ TOKENS = {
 def show(object:BaseModel):
    if isinstance(object,BaseModel):
       pprint(object.model_dump())
+   elif isinstance(object,list):
+    for i in object:
+        show(i)
    else:
       pprint(object)
    return object
@@ -36,8 +40,24 @@ def show(object:BaseModel):
 # Common Functions for Requesting Data from API
 class commonTools:
     def __init__(self) -> None:
-
-        pass
+        menuPath = "menuList.json"
+        with open(menuPath, 'r') as file:
+            data = json.load(file)
+        self.serviceMenu = data
+    
+    def getKeys(self,serviceName:str):
+        if serviceName in self.serviceMenu:
+            return self.serviceMenu[serviceName]
+        else:
+            return None
+    
+    def getServiceInfo(self,serviceName:str,country:countryInfo)->serviceInfo:
+        keys = self.getKeys(serviceName)
+        if keys:
+            serviceinfo = serviceInfo(name=serviceName,country=country,**keys)
+            return serviceinfo
+        else:
+            print("Invalid Service Name: %s" % serviceName)
 
     def isError(self, object:Union[str,dict]) -> bool:
         if isinstance(object, str):
