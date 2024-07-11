@@ -3,6 +3,5 @@ pydantic
 typing
 FastAPI
 pytest
-json
 requests
 pprint
