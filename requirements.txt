@@ -4,4 +4,3 @@ typing
 FastAPI
 pytest
 requests
-pprint
