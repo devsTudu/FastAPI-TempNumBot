@@ -1,7 +1,7 @@
 import asyncio
 from typing import Union
 import time
-from models import (serviceDetails,serviceInfo,phoneDetails,Error,countryInfo)
+from models import (serviceDetails,serviceInfo,phoneDetails,Error,countryInfo,SERVERS)
 from tools import (commonTools,BASE_URL,TOKENS, show)
 from pydantic import BaseModel
 
@@ -123,33 +123,8 @@ class fastSMS:
     except ValueError as v:
       return v
     return bal
-    
+  
 
-  async def test_getNo(self):
-     service = serviceInfo(name='Probo',fastCode='aa',country=countryInfo(),)
-     serviceDet = await self.getServiceDetails(service)
-     phone = await self.getPhonenumber(service= serviceDet,user='1234567')
-     show(phone)
-     return phone
-  async def test_serviceDetails(self):
-     req = serviceInfo(name='Probo',fastCode='aa',country=countryInfo())
-     service =await self.getServiceDetails(req)
-     show(service)
-  async def test_getStatus(self):
-     x = await self.getStatus(phoneDetails(phone='7798564311',access_id="171991856255350",user=''))
-     show(x)
-  async def test_cancel_phone(self):
-     x = await self.cancelService("171992269389667")
-     show(x)
-  async def test_Multiple(self):
-     phone1 = phoneDetails(phone='123456789',access_id="172001563298249")
-     phone2 = phoneDetails(phone='9876543217',access_id="172000539116086",user='9556130490')
-     phone3 = phoneDetails(phone='654321987',access_id="172001380934482",user='9938242526')
-     arr = [phone3,phone2,phone1]
-     arr = await self.getMultipleStatus(arr)
-     for a in arr:
-        show(a)
- 
 class tigerSMS:
 
   def __init__(self) -> None:
@@ -710,3 +685,26 @@ class FiveSim:
                               headers=self.headers)
       return response
 
+class api_requests:
+  def __init__(self):
+    self.fast = fastSMS()
+    self.tiger = tigerSMS()
+    self.bower = bowerSMS()
+    self.five = FiveSim()
+  
+  async def getBalance(self,serverName:SERVERS):
+    if serverName == "Fast":
+      server = self.fast
+    elif serverName == "Tiger":
+      server = self.tiger
+    elif serverName == "5Sim":
+      server = self.five
+    elif serverName == "Bower":
+      server = self.bower
+    else:
+      return "Server not found"
+    bal = await server.getBalance()
+    return {serverName:bal}
+  
+  async def getPrices(self, sericeinfo:serviceInfo):
+    pass
