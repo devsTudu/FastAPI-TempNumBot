@@ -1,4 +1,4 @@
-from helper import (bowerSMS,tigerSMS,fastSMS,FiveSim)
+from helper import (bowerSMS,tigerSMS,fastSMS,FiveSim,api_requests)
 from helper import tools,show
 from helper import countryInfo,serviceInfo,serviceDetails,phoneDetails
 import asyncio
@@ -68,4 +68,10 @@ def manualTest():
     server = "bower" #input("Select a server to test:")
     asyncio.run(test.testServer(serverName=server))
 
-manualTest()
+#manualTest()
+def  api_req_test():
+  name = "Facebook" #input("Enter the service name to test:")
+  resp = asyncio.run(api_requests().getPricesFromName(name))
+  show(resp)
+
+#api_req_test()

@@ -47,4 +47,10 @@ async def checkBal(serverName:SERVERS,api_key: str = Security(get_api_key)):
     resp = await api_requests().getBalance(serverName=serverName)
     return resp
 
+@app.get("/getPrices")
+async def getPricesFromName(serviceName:str=None,api_key: str = Security(get_api_key)):
+    """A private endpoint that requires a valid API key to be provided."""
+    resp = await api_requests().getPricesFromName(serviceName=serviceName)
+    return resp
+
 

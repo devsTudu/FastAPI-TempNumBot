@@ -42,3 +42,12 @@ class phoneDetails(BaseModel):
 class Error(BaseModel):
    message: Union[dict,str]
 
+class offers(BaseModel):
+    server:SERVERS
+    provider:Optional[str]='Any'
+    count:PositiveInt
+    cost:PositiveFloat
+
+class priceResponse(BaseModel):
+    service:serviceInfo
+    offers:list[offers]

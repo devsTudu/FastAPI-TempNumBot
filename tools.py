@@ -7,6 +7,9 @@ from typing import Union
 from pydantic import BaseModel
 from requests import get
 from models import (serviceInfo,countryInfo)
+from dotenv import load_dotenv
+
+load_dotenv()
 
 
 # Variable Declaration

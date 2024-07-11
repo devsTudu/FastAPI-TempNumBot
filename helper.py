@@ -1,7 +1,8 @@
 import asyncio
 from typing import Union
 import time
-from models import (serviceDetails,serviceInfo,phoneDetails,Error,countryInfo,SERVERS)
+from models import (serviceDetails,serviceInfo,phoneDetails,
+                    Error,countryInfo,SERVERS,priceResponse,offers)
 from tools import (commonTools,BASE_URL,TOKENS, show)
 from pydantic import BaseModel
 
@@ -706,5 +707,28 @@ class api_requests:
     bal = await server.getBalance()
     return {serverName:bal}
   
-  async def getPrices(self, sericeinfo:serviceInfo):
-    pass
+  async def getPrices(self, serviceinfo:serviceInfo):
+    lis = []
+    if serviceinfo.bowerCode:
+      lis.append(await self.bower.getServiceDetails(serviceinfo))
+    if serviceinfo.tigerCode:
+      lis.append(await self.tiger.getServiceDetails(serviceinfo))
+    if serviceinfo.fastCode:
+      lis.append(await self.fast.getServiceDetails(serviceinfo))
+    if serviceinfo.fiveCode:
+      lis += await self.five.getServiceDetails(serviceinfo)
+    offering = []
+    for i in lis:
+      data = {
+        "server":i.server,
+        "provider":i.provider,
+        "cost":i.cost,
+        "count":i.count
+      }
+      offering.append(offers(**data))
+    resp = priceResponse(service=serviceinfo,offers=offering)
+    return resp.dict()
+
+  async def getPricesFromName(self, serviceName:str):
+    serviceinfo = tools.getServiceInfo(serviceName,country=countryInfo())
+    return await self.getPrices(serviceinfo)
