@@ -3,6 +3,7 @@ from typing import Union
 import time
 from models import (serviceDetails,serviceInfo,phoneDetails,Error,countryInfo)
 from tools import (commonTools,BASE_URL,TOKENS, show)
+from pydantic import BaseModel
 
 tools = commonTools()
 
@@ -336,6 +337,8 @@ class bowerSMS:
       params['service'] = serviceCode
       params['country'] = countryCode
       response = await tools.getJson(self.url, params=params)
+      if tools.isError(response):
+        return response
       try:
         data = response[countryCode][serviceCode] #cost and count
         return serviceDetails(server='Bower',serviceInfo=service,**data)
@@ -357,7 +360,7 @@ class bowerSMS:
                           access_id=access,
                           phone=phone,user=user)
     else:
-       return Error(response)
+       return Error(message=response)
 
   async def getStatus(self, phoneDet:phoneDetails)->phoneDetails:
     """
@@ -448,7 +451,6 @@ class bowerSMS:
 
     response = await tools.getJson(self.url, params=params)
     return response
-
 
 class FiveSim:
   def __init__(self):
@@ -708,79 +710,3 @@ class FiveSim:
                               headers=self.headers)
       return response
 
-
-
-
-
-class testFunctions:
-  def __init__(self,service:serviceInfo):
-    self.bower = bowerSMS()
-    self.tiger = tigerSMS()
-    self.fast = fastSMS()
-    self.fivesim = FiveSim()
-    self.service = service
-
-  async def testServer(self,serverName:str):
-    if serverName == 'bower':
-      print("Bower Test Starting")
-      server = self.bower
-    elif serverName == 'tiger':
-      print("Tiger Test Starting")
-      server = self.tiger
-    elif serverName == 'fast':
-      print("Fast Test Starting")
-      server = self.fast
-    elif serverName == '5sim':
-      print("5sim Test Starting")
-      server = self.fivesim
-    else:
-      print("Invalid Server Name")
-      return None
-    bal = await server.getBalance()
-    print("Balance: " + str(bal))
-    serviceDet =await server.getServiceDetails(service=self.service)
-    show(serviceDet)
-    if isinstance(serviceDet,list):
-      provider_list = []
-      for i in serviceDet:
-        provider_list.append(i.provider)
-        print("%s cost: %i count:%i" % (i.provider,i.cost,i.count))
-      while True:
-        provider = input("Enter Provider:")
-        if provider in provider_list:
-          for i in serviceDet:
-            if i.provider == provider:
-              serviceDet = i
-              break
-          break
-        else: print(f"Invalid {provider}")
-
-    if not isinstance(serviceDet, serviceDetails):
-      return None
-    phone = await server.getPhoneNumber(serviceDet=serviceDet,user='9348692623')
-    show(phone)
-    if isinstance(phone,phoneDetails):
-      if phone.status == 'Waiting':
-        show("Waiting 10 sec before canceling")
-        time.sleep(10)
-        cancel = await server.cancelService(phoneDet=phone)
-        print("Cancelling now the phone number, sucess:",end=" ")
-        show(cancel)
-
-if __name__ == '__main__':
-    name = "instagram"
-    service = tools.getServiceInfo(name,country=countryInfo())
-    show(service)
-    test = testFunctions(service=service)
-    asyncio.run(test.testServer('5sim'))
-
-
-
-# Tests Functions Declared
-def test_countryFromID():
-    x = asyncio.run(tools.getCountryNameFromCode('22'))
-    assert x == 'india'
-
-def test_serviceFromID():
-    x = asyncio.run(tools.getServiceNameFromCode('tg'))
-    assert x == 'Telegram'

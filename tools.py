@@ -89,6 +89,8 @@ class commonTools:
             if responsePrint:
                 print(resp.content)
             try:
+                if resp.json()=={}:
+                    return {"Error":"Empty JSON response"}
                 return resp.json()
             except JSONDecodeError as j:
                 return {'Error': resp.text}
