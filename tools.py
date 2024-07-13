@@ -59,8 +59,6 @@ class commonTools:
         if keys:
             serviceinfo = serviceInfo(name=serviceName,country=country,**keys)
             return serviceinfo
-        else:
-            print("Invalid Service Name: %s" % serviceName)
 
     def isError(self, object:Union[str,dict]) -> bool:
         if isinstance(object, str):

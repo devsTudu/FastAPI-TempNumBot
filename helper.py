@@ -731,4 +731,6 @@ class api_requests:
 
   async def getPricesFromName(self, serviceName:str):
     serviceinfo = tools.getServiceInfo(serviceName,country=countryInfo())
+    if serviceinfo is None:
+      return "Service not found"
     return await self.getPrices(serviceinfo)
