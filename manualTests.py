@@ -60,7 +60,7 @@ class testFunctions:
         show(cancel)
 
 def manualTest():
-    name = "Facebook" #input("Enter the service name to test:")
+    name = input("Enter the service name to test:")
     service = tools.getServiceInfo(name,country=countryInfo())
     show(service)
     test = testFunctions(service=service)
@@ -70,8 +70,8 @@ def manualTest():
 
 #manualTest()
 def  api_req_test():
-  name = "Facebook" #input("Enter the service name to test:")
+  name = input("Enter the service name to test:")
   resp = asyncio.run(api_requests().getPricesFromName(name))
   show(resp)
 
-#api_req_test()
+api_req_test()

@@ -6,7 +6,7 @@ from typing import Union
 
 from pydantic import BaseModel
 from requests import get
-from models import (serviceInfo,countryInfo)
+from models import (serviceInfo,countryInfo,Error)
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -60,13 +60,15 @@ class commonTools:
             serviceinfo = serviceInfo(name=serviceName,country=country,**keys)
             return serviceinfo
 
-    def isError(self, object:Union[str,dict]) -> bool:
+    def isError(self, object) -> bool:
         if isinstance(object, str):
             return object.startswith('Error')
         elif isinstance(object,dict):
             return object.keys() == {'Error'}
+        elif isinstance(object,Error):
+            return True
         else:
-           return True
+           return False
 
 
     async def getText(self, url, params=None, headers=None) -> str:

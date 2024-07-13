@@ -449,7 +449,7 @@ class FiveSim:
     except ValueError as v:
       return v
 
-  async def getServiceDetails(self,service:serviceInfo)->Union[list[phoneDetails],Error]:
+  async def getServiceDetails(self,service:serviceInfo)->Union[list[serviceDetails],Error]:
       serviceCode = service.fiveCode
       countryCode = service.country.name
       if not serviceCode:
@@ -473,6 +473,7 @@ class FiveSim:
               'count':val['count'],
               'cost':val['cost']
             }
+            if data['count'] == 0: continue
             lis.append(serviceDetails(**data))
           return lis
       except :
@@ -719,6 +720,8 @@ class api_requests:
       lis += await self.five.getServiceDetails(serviceinfo)
     offering = []
     for i in lis:
+      if tools.isError(i):
+        continue
       data = {
         "server":i.server,
         "provider":i.provider,
