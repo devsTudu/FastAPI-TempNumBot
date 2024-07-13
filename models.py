@@ -22,8 +22,8 @@ class serviceDetails(BaseModel):
     server: SERVERS
     serviceInfo: serviceInfo
     provider: Optional[str]='Any'  # Will be used in 5Sim
-    count: PositiveInt
-    cost: PositiveFloat
+    count: PositiveInt=1
+    cost: PositiveFloat=1.0
 
 class phoneDetails(BaseModel):
     serviceDetail: Optional[serviceDetails] = None
@@ -43,6 +43,7 @@ class Error(BaseModel):
    message: Union[dict,str]
 
 class offers(BaseModel):
+    """The modified model to show inside the bot"""
     server:SERVERS
     provider:Optional[str]='Any'
     count:PositiveInt

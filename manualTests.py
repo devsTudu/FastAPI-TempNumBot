@@ -4,6 +4,9 @@ from helper import countryInfo,serviceInfo,serviceDetails,phoneDetails
 import asyncio
 import time
 
+
+null = ""
+
 class testFunctions:
   def __init__(self,service:serviceInfo):
     self.bower = bowerSMS()
@@ -70,8 +73,32 @@ def manualTest():
 
 #manualTest()
 def  api_req_test():
-  name = input("Enter the service name to test:")
-  resp = asyncio.run(api_requests().getPricesFromName(name))
+  #name = input("Enter the service name to test:")
+  data = {
+  "serviceDetail": {
+    "server": "5Sim",
+    "serviceInfo": {
+      "name": "Instagram",
+      "fastCode": "idg",
+      "tigerCode": "null",
+      "bowerCode": "ig",
+      "fiveCode": "instagram",
+      "country": {
+        "name": "india",
+        "code": "22"
+      }
+    },
+    "provider": "virtual21",
+    "count": 1,
+    "cost": 7.2
+  },
+  "phone": "+918436155021",
+  "access_id": "623739308",
+  "otp": "",
+  "status": "Waiting",
+  "user": "123456789"
+}
+  resp = asyncio.run(api_requests().getStatus(phoneDetails(**data)))
   show(resp)
 
 api_req_test()

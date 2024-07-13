@@ -693,6 +693,12 @@ class api_requests:
     self.tiger = tigerSMS()
     self.bower = bowerSMS()
     self.five = FiveSim()
+    self.server = {
+      "Fast":self.fast,
+      "Tiger":self.tiger,
+      "Bower":self.bower,
+      "5Sim":self.five
+    }
   
   async def getBalance(self,serverName:SERVERS):
     if serverName == "Fast":
@@ -737,3 +743,29 @@ class api_requests:
     if serviceinfo is None:
       return "Service not found"
     return await self.getPrices(serviceinfo)
+  
+  async def getPhoneFromName(self,server:SERVERS,
+                        serviceName:str=None,
+                        provider:str='Any',
+                        user:str='123456789')->phoneDetails:
+    serviceinfo = tools.getServiceInfo(serviceName,countryInfo())
+    if serviceinfo is None:
+      return "Service not found"
+    service = serviceDetails(server=server,
+                        provider=provider,
+                        serviceInfo=serviceinfo)
+    return await self.getPhone(serviceOrder=service,user=user)
+
+  async def getPhone(self,serviceOrder:serviceDetails,user)->phoneDetails:
+    server = self.server[serviceOrder.server]
+    return await server.getPhoneNumber(serviceOrder,user=user)
+    
+  async def getStatus(self,serverName:SERVERS,
+                      access_id:str,
+                      phone=123456789)->phoneDetails:
+    server = self.server[serverName]
+    return await server.getStatus(phoneDet=phoneDetails(access_id=access_id,phone=phone))
+
+  async def cancelPhone(self,serverName:SERVERS,access_id:str):
+    server = self.server[serverName]
+    return await server.cancelService(access_id)
