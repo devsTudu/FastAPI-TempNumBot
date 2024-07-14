@@ -1,10 +1,8 @@
 import asyncio
 from typing import Union
-import time
 from models import (serviceDetails, serviceInfo, phoneDetails,
                     Error, countryInfo, SERVERS, priceResponse, offers)
 from tools import (commonTools, BASE_URL, TOKENS, show)
-from pydantic import BaseModel
 
 tools = commonTools()
 
@@ -477,7 +475,7 @@ class FiveSim:
                     continue
                 lis.append(serviceDetails(**data))
             return lis
-        except:
+        except Exception:
             return Error(message=str(response))
 
     async def getPhoneNumber(self, serviceDet: serviceDetails, user: str = "1234567") -> Union[phoneDetails, Error]:
@@ -526,31 +524,31 @@ class FiveSim:
                         phoneDet.otp = response['sms'][-1]['code']
                     else:
                         phoneDet.status = 'Waiting'
-            except ValueError as v:
+            except ValueError:
                 phoneDet.status = 'Invalid'
         return phoneDet
 
-        example = {
-            "id": 11631253,
-            "created_at": "2018-10-13T08:13:38.809469028Z",
-            "phone": "+79000381454",
-            "product": "vkontakte",
-            "price": 21,
-            "status": "RECEIVED",
-            "expires": "2018-10-13T08:28:38.809469028Z",
-            "sms": [
-                {
-                    "created_at": "2018-10-13T08:20:38.809469028Z",
-                    "date": "2018-10-13T08:19:38Z",
-                    "sender": "VKcom",
-                    "text": "VK: 09363 - use this code to reclaim your suspended profile.",
-                    "code": "09363"
-                }
-            ],
-            "forwarding": false,
-            "forwarding_number": "",
-            "country": "russia"
-        }
+        # example = {
+        #     "id": 11631253,
+        #     "created_at": "2018-10-13T08:13:38.809469028Z",
+        #     "phone": "+79000381454",
+        #     "product": "vkontakte",
+        #     "price": 21,
+        #     "status": "RECEIVED",
+        #     "expires": "2018-10-13T08:28:38.809469028Z",
+        #     "sms": [
+        #         {
+        #             "created_at": "2018-10-13T08:20:38.809469028Z",
+        #             "date": "2018-10-13T08:19:38Z",
+        #             "sender": "VKcom",
+        #             "text": "VK: 09363 - use this code to reclaim your suspended profile.",
+        #             "code": "09363"
+        #         }
+        #     ],
+        #     "forwarding": false,
+        #     "forwarding_number": "",
+        #     "country": "russia"
+        # }
 
     async def changeStatus(self, phoneDet: phoneDetails, code: str) -> bool:
         """Change the status of id, status = [finish,cancel]"""
@@ -562,10 +560,10 @@ class FiveSim:
                                        headers=self.headers)
         try:
             return response['status'] == "CANCELED/FINISHED"
-        except:
+        except ValueError:
             return False
 
-        example = {
+        _ = {
             "id": 11631253,
             "created_at": "2018-10-13T08:13:38.809469028Z",
             "phone": "+79000381454",
@@ -582,7 +580,7 @@ class FiveSim:
                     "code": "09363"
                 }
             ],
-            "forwarding": false,
+            "forwarding": False,
             "forwarding_number": "",
             "country": "russia"
         }
