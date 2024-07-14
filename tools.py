@@ -96,7 +96,7 @@ class commonTools:
                     return {"Error":"Empty JSON response"}
                 return resp.json()
             except JSONDecodeError as j:
-                return {'Error': resp.text}
+                return {'Error': str(j)}
         else:
             return {"Error": resp.text}
 
