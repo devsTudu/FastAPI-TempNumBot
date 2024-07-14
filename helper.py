@@ -484,8 +484,7 @@ class FiveSim:
         country = serviceDet.serviceInfo.country.name
         product = serviceDet.serviceInfo.fiveCode
         operator = serviceDet.provider
-        url = f"https://5sim.net/v1/user/buy/activation/{
-            country}/{operator}/{product}"
+        url = f"https://5sim.net/v1/user/buy/activation/{country}/{operator}/{product}"
         response = await tools.getJson(url,
                                        headers=self.headers)
         try:
@@ -558,11 +557,13 @@ class FiveSim:
         url = f'https://5sim.net/v1/user/{code}/' + str(id)
         response = await tools.getJson(url,
                                        headers=self.headers)
+        if tools.isError(response):
+            show(response)
+            return False
         try:
             return response['status'] == "CANCELED/FINISHED"
         except ValueError:
             return False
-
         _ = {
             "id": 11631253,
             "created_at": "2018-10-13T08:13:38.809469028Z",
