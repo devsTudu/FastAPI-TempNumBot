@@ -4,7 +4,6 @@ from helper import api_requests
 from helper import SERVERS
 from security import Security, get_api_key
 
-
 app = FastAPI()
 
 
@@ -28,7 +27,6 @@ async def getpricesfromname(servicename: str = None,
     resp = await api_requests().getPricesFromName(serviceName=servicename)
 
     if isinstance(resp, str):
-
         raise HTTPException(
 
             status_code=status.HTTP_404_NOT_FOUND,
@@ -38,18 +36,17 @@ async def getpricesfromname(servicename: str = None,
 
 
 @app.get("/getPhone")
-async def getphonefromname(server: SERVERS,
-                           servicename: str = None,
-                           provider: str = 'Any',
-                           user: str = "123456789",
-                           api_key: str = Security(get_api_key)):
+async def get_phone_from_name(server: SERVERS,
+                              service_name: str = None,
+                              provider: str = 'Any',
+                              user: str = "123456789",
+                              api_key: str = Security(get_api_key)):
     """Buy you a phone number given these details, 
-    if failed will return Error Statment"""
+    if failed will return Error Statement"""
 
-    resp = await api_requests().getPhoneFromName(server, servicename, provider, user)
+    resp = await api_requests().getPhoneFromName(server, service_name, provider, user)
 
     if isinstance(resp, str):
-
         raise HTTPException(
 
             status_code=status.HTTP_404_NOT_FOUND,
@@ -59,9 +56,9 @@ async def getphonefromname(server: SERVERS,
 
 
 @app.get('/updates')
-async def getupdates(server: SERVERS, access_id: str,
-                     phone=987654321,
-                     api_key: str = Security(get_api_key)):
+async def get_updates(server: SERVERS, access_id: str,
+                      phone=987654321,
+                      api_key: str = Security(get_api_key)):
     """Get the otp update for a given phone number details"""
 
     resp = await api_requests().getStatus(serverName=server,
@@ -76,8 +73,8 @@ async def getupdates(server: SERVERS, access_id: str,
 
 
 @app.get("/cancelPhone")
-async def cancelphone(server: SERVERS, access_id: str,
-                      api_key: str = Security(get_api_key)):
+async def cancel_phone(server: SERVERS, access_id: str,
+                       api_key: str = Security(get_api_key)):
     """Cancel the otp update for a given phone number details,
 
     Returns True if Sucessfully Canceled Phone Number"""

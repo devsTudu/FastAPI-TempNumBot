@@ -666,7 +666,7 @@ class api_requests:
             }
             offering.append(offers(**data))
         resp = priceResponse(service=serviceinfo, offers=offering)
-        return resp.dict()
+        return resp.model_dump()
 
     async def getPricesFromName(self, serviceName: str):
         serviceinfo = tools.getServiceInfo(serviceName, country=countryInfo())
