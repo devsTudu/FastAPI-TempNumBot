@@ -1,4 +1,8 @@
+import json
+
 from fastapi import FastAPI, status, HTTPException
+from starlette.responses import JSONResponse
+
 from models import phoneDetails
 from helper import api_requests
 from helper import SERVERS
@@ -16,7 +20,7 @@ def public():
 @app.get("/checkBal")
 async def checkbal(server_name: SERVERS, api_key: str = Security(get_api_key)):
     """Check the current balance of all your servers"""
-    resp = await api_requests().getBalance(serverName=server_name)
+    resp = await api_requests().get_balance(serverName=server_name)
     return resp
 
 
@@ -82,3 +86,18 @@ async def cancel_phone(server: SERVERS, access_id: str,
     resp = await api_requests().cancelPhone(serverName=server,
                                             access_id=access_id)
     return resp
+
+
+@app.get("/downloadList")
+async def get_download_list():
+    try:
+        with open('menuList.json', 'r') as file:
+            json_data = json.load(file)
+        return JSONResponse(content=json_data,
+                            headers={'Access-Control-Allow-Origin': '*',
+                                     'Content-Disposition'
+                                     : 'attachment; filename=menuList.json'})
+    except FileNotFoundError:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+    except json.decoder.JSONDecodeError:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)

@@ -446,6 +446,9 @@ class FiveSim:
             return bal
         except ValueError as v:
             return v
+        except KeyError as k:
+            print(k,response)
+            return k
 
     async def getServiceDetails(self, service: serviceInfo) -> Union[list[serviceDetails], Error]:
         serviceCode = service.fiveCode
@@ -639,7 +642,7 @@ class api_requests:
             "5Sim": self.five
         }
 
-    async def getBalance(self, serverName: SERVERS):
+    async def get_balance(self, serverName: SERVERS):
         server = self.server[serverName]
         bal = await server.getBalance()
         return {serverName: bal}
